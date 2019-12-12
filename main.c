@@ -7,14 +7,49 @@
 
 static const long Num_To_Sort = 1000000000;
 
+int partition(int *arr, int low, int high) {
+    int pivot = arr[high];
+    int i = low;
+    for (int j = low; j < high; j++)
+    {
+        if(arr[j] < pivot) {
+            int temp = arr[i];
+            arr[i] = arr[j];
+            arr[j] = temp;
+            i++;
+        }
+    }
+    int temp = arr[i];
+    arr[i] = arr[high];
+    arr[high] = temp;
+    return i;
+}
+
 // Sequential version of your sort
 // If you're implementing the PSRS algorithm, you may ignore this section
-void sort_s(int *arr) {
-
+void sort_s(int *arr, int low, int high) {
+    // implements quick sort on the array
+    int i;
+    if (low < high) {
+        i = partition(arr, low, high);
+        sort_s(arr, low, i - 1);
+        sort_s(arr, i + 1, high);
+    }
 }
 
 // Parallel version of your sort
-void sort_p(int *arr) {
+void sort_p(int *arr, int low, int high) {
+    // implements quick sort on the array
+    // Based on help from https://codereview.stackexchange.com/questions/181441/making-a-faster-parallel-quicksort
+    int i;
+    if (low < high){
+        i = partition(arr, low, high);
+        #pragma omp task
+        sort_p(arr, low, i - 1);
+        #pragma omp task
+        sort_p(arr, i + 1, high);
+
+    }
 
 }
 
@@ -42,7 +77,7 @@ int main() {
 
     printf("Timing sequential...\n");
     gettimeofday(&start, NULL);
-    sort_s(arr_s);
+    sort_s(arr_s, 0, Num_To_Sort - 1);
     gettimeofday(&end, NULL);
     printf("Took %f seconds\n\n", end.tv_sec - start.tv_sec + (double) (end.tv_usec - start.tv_usec) / 1000000);
 
@@ -50,7 +85,11 @@ int main() {
 
     printf("Timing parallel...\n");
     gettimeofday(&start, NULL);
-    sort_p(arr_p);
+    #pragma omp parallel
+    {
+    #pragma omp single
+        sort_p(arr_p, 0, Num_To_Sort - 1);
+    };
     gettimeofday(&end, NULL);
     printf("Took %f seconds\n\n", end.tv_sec - start.tv_sec + (double) (end.tv_usec - start.tv_usec) / 1000000);
 
